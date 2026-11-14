@@ -87,6 +87,10 @@ def list_items(conn: sqlite3.Connection, status: ItemStatus) -> list[Item]:
     return [_row_to_item(row) for row in rows]
 
 
+def count_items(conn: sqlite3.Connection) -> int:
+    return conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+
+
 def _row_to_item(row: sqlite3.Row) -> Item:
     return Item(
         id=row["id"],
