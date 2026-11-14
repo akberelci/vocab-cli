@@ -13,6 +13,7 @@ from collections.abc import Collection, Iterator
 
 from spacy.tokens import Doc, Token
 
+from vocab import difficulty
 from vocab.models import Candidate, ItemKind
 from vocab.nlp.examples import excerpt
 
@@ -45,11 +46,37 @@ def extract_words(doc: Doc, skip: Collection[int] = ()) -> Iterator[Candidate]:
             if token.i not in skip and _is_word(token):
                 yield Candidate(
                     kind=ItemKind.WORD,
-                    lemma=token.lemma_.lower(),
+                    lemma=lemma_of(token),
                     pos=token.pos_,
                     surface_form=token.text,
                     sentence=excerpt(sentence, [token.i]),
                 )
+
+
+# How much more common the written form must be than spaCy's lemma (in Zipf
+# points, so 1.0 means ten times) before the lemma is distrusted.
+_LEMMA_DISTRUST = 1.0
+
+
+def lemma_of(token: Token) -> str:
+    """The base form of a word, in lower case.
+
+    Normally this is spaCy's lemma. One mistake of the small model is repaired:
+    it removes the final "s" of nouns that are not plurals, turning
+    "geopolitics" into "geopolitic" and "species" into "specie". If such a
+    shortened form is unknown or far rarer than the written word, the written
+    word is kept.
+    """
+    lemma = token.lemma_.lower()
+    written = token.lower_
+
+    if token.pos_ == "NOUN" and written == lemma + "s":
+        lemma_score = difficulty.zipf_score(lemma) or 0.0
+        written_score = difficulty.zipf_score(written) or 0.0
+        if written_score - lemma_score >= _LEMMA_DISTRUST:
+            return written
+
+    return lemma
 
 
 def _is_word(token: Token) -> bool:

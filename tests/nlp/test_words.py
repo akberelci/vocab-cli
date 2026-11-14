@@ -60,6 +60,45 @@ def test_candidate_keeps_the_original_form_and_sentence():
     assert candidate.sentence == "The children were running."
 
 
+# --- nouns that end in "s" but are not plurals --------------------------------------
+
+
+def test_noun_ending_in_ics_keeps_its_s():
+    # spaCy's lemma is "geopolitic", which is not a word.
+    assert "geopolitics" in lemmas("The geopolitics of oil changed everything.")
+    assert "geopolitic" not in lemmas("The geopolitics of oil changed everything.")
+
+
+def test_other_nouns_whose_shortened_form_is_far_rarer_keep_their_s():
+    found = lemmas("She studied mathematics and wrote about several species of birds.")
+
+    assert "mathematics" in found
+    assert "species" in found
+    assert not {"mathematic", "specie"} & set(found)
+
+
+def test_ordinary_plurals_are_still_reduced_to_the_singular():
+    found = lemmas("The athletes left their shoes and keys near the houses.")
+
+    assert {"athlete", "shoe", "key", "house"} <= set(found)
+    assert not {"athletes", "shoes", "keys", "houses"} & set(found)
+
+
+def test_rare_plural_of_a_rare_word_is_still_reduced():
+    # Both forms are rare, so there is no reason to distrust the lemma.
+    assert "organiser" in lemmas("The organisers called off the race.")
+
+
+def test_verb_forms_ending_in_s_are_not_affected():
+    assert lemmas("She runs and he watches.") == ["she", "run", "and", "he", "watch"]
+
+
+def test_known_limitation_economics_becomes_economic():
+    # "economic" is itself a common word, so the guard cannot tell that the
+    # lemma is wrong. See docs/KNOWN_ISSUES.md.
+    assert "economic" in lemmas("He studied economics at university.")
+
+
 # --- contractions ------------------------------------------------------------
 
 
