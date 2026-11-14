@@ -65,6 +65,19 @@ def test_phrasal_verbs_are_saved_as_their_own_kind_of_item(conn):
     ]
 
 
+def test_idioms_are_saved_as_their_own_kind_of_item(conn):
+    importer.import_source(conn, make_source("It rained, so we called it a day."))
+
+    idiom = items_by_lemma(conn)["call it a day"]
+
+    assert idiom.kind is ItemKind.IDIOM
+    assert idiom.pos is None
+    assert repo.list_occurrences(conn, idiom.id) == [
+        Occurrence(sentence="It rained, so we called it a day.", surface_form="called it a day")
+    ]
+    assert {"call", "day"} <= set(items_by_lemma(conn))  # the single words are kept too
+
+
 def test_result_reports_how_much_was_found(conn):
     result = importer.import_source(conn, make_source("The dog saw the cat."))
 

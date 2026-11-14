@@ -64,3 +64,18 @@ def test_literal_preposition_stays_a_word():
 
     assert lemmas(found, ItemKind.PHRASAL_VERB) == []
     assert lemmas(found, ItemKind.WORD) == ["he", "run", "up", "the", "hill"]
+
+
+def test_idiom_is_offered_together_with_its_single_words():
+    found = extract_all("Someone spilled the beans.")
+
+    assert lemmas(found, ItemKind.IDIOM) == ["spill the beans"]
+    assert lemmas(found, ItemKind.WORD) == ["someone", "spill", "the", "bean"]
+
+
+def test_phrasal_verb_and_idiom_in_one_sentence():
+    found = extract_all("At first, she nearly gave up.")
+
+    assert lemmas(found, ItemKind.PHRASAL_VERB) == ["give up"]
+    assert lemmas(found, ItemKind.IDIOM) == ["at first"]
+    assert lemmas(found, ItemKind.WORD) == ["at", "first", "she", "nearly"]

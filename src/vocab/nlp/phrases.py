@@ -1,4 +1,4 @@
-"""Finding multi-word expressions: phrasal verbs (and, in the next step, idioms).
+"""Finding multi-word expressions: phrasal verbs and idioms.
 
 A phrasal verb is found in two ways, and the longer result wins:
 
@@ -7,6 +7,11 @@ A phrasal verb is found in two ways, and the longer result wins:
 2. List rule. The verb is looked up in data/phrasal_verbs.txt, and the words
    after it are compared with the listed phrasal verbs for that verb:
    "look forward to", "put up with", "run into".
+
+Idioms have one rule:
+
+3. Idiom rule. The expressions in data/idioms.txt are searched in the text as
+   a row of neighbouring words: "kicked the bucket", "at first".
 """
 
 from dataclasses import dataclass
@@ -60,6 +65,23 @@ def listed_phrasal_verbs() -> dict[str, list[tuple[str, ...]]]:
         if parts:
             by_verb.setdefault(verb, []).append(tuple(parts))
     return by_verb
+
+
+@lru_cache(maxsize=1)
+def listed_idioms() -> dict[str, list[tuple[str, ...]]]:
+    """The idiom list, grouped by first word.
+
+    {"kick": [("kick", "the", "bucket")], "at": [("at", "first"), ("at", "last"), ...]}
+
+    Grouping by first word means that for each word of a text only the few
+    idioms that could start there have to be checked, not the whole list.
+    """
+    by_first_word: dict[str, list[tuple[str, ...]]] = {}
+    for phrase in parse_phrase_list(read_data_file("idioms.txt")):
+        words = tuple(phrase.split())
+        if len(words) >= 2:
+            by_first_word.setdefault(words[0], []).append(words)
+    return by_first_word
 
 
 # --- phrasal verbs ------------------------------------------------------------
@@ -169,3 +191,60 @@ def _surface_form(tokens: list[Token]) -> str:
         separator = " " if token.i == previous.i + 1 else " ... "
         text += separator + token.text
     return text
+
+
+# --- idioms -------------------------------------------------------------------
+
+
+def find_idioms(doc: Doc) -> list[PhraseMatch]:
+    """Rule 3: find listed idioms as a row of neighbouring words."""
+    idioms = listed_idioms()
+    found: dict[tuple[int, tuple[str, ...]], PhraseMatch] = {}
+
+    for token in doc:
+        # An idiom can start with the word as written ("at") or with a form of
+        # its first word ("kicked" for "kick").
+        for first_word in {token.lower_, token.lemma_.lower()}:
+            for words in idioms.get(first_word, []):
+                if _idiom_starts_at(token, words):
+                    found[(token.i, words)] = _idiom_match(token, words)
+
+    return _without_contained_matches(list(found.values()))
+
+
+def _idiom_starts_at(start: Token, words: tuple[str, ...]) -> bool:
+    end = start.i + len(words)
+    if end > start.sent.end:
+        return False
+    tokens = start.doc[start.i : end]
+    # Each word may match the text as written ("beans") or its base form
+    # ("kicked" -> "kick"), so the list can use base forms for verbs.
+    return all(
+        word in (token.lower_, token.lemma_.lower())
+        for token, word in zip(tokens, words, strict=True)
+    )
+
+
+def _idiom_match(start: Token, words: tuple[str, ...]) -> PhraseMatch:
+    span = start.doc[start.i : start.i + len(words)]
+    candidate = Candidate(
+        kind=ItemKind.IDIOM,
+        lemma=" ".join(words),
+        pos=None,  # an idiom as a whole has no single part of speech
+        surface_form=span.text,
+        sentence=sentence_text(start.sent),
+    )
+    return PhraseMatch(candidate=candidate, token_indexes=frozenset(t.i for t in span))
+
+
+def _without_contained_matches(matches: list[PhraseMatch]) -> list[PhraseMatch]:
+    """Longest match for idioms: drop a match that lies completely inside a longer one.
+
+    "He sat on the fence" matches both "sit on the fence" and "on the fence";
+    only the longer one is kept.
+    """
+    return [
+        match
+        for match in matches
+        if not any(match.token_indexes < other.token_indexes for other in matches)
+    ]
