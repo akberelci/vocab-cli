@@ -41,6 +41,20 @@ class Item:
 
 
 @dataclass(frozen=True)
+class Candidate:
+    """Something found in a text that might be worth learning.
+
+    This is what the language processing produces, before anything is saved.
+    """
+
+    kind: ItemKind
+    lemma: str  # base form, lower case: "child" for "children"
+    pos: str  # spaCy part-of-speech tag: NOUN, VERB, ADJ, ...
+    surface_form: str  # the text as it was written: "children"
+    sentence: str  # the sentence it was found in
+
+
+@dataclass(frozen=True)
 class Occurrence:
     sentence: str
     surface_form: str
