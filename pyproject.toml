@@ -3,6 +3,8 @@ name = "vocab"
 version = "0.1.0"
 description = "Local-first English vocabulary learning tool for Turkish speakers"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 # Dependencies are added milestone by milestone, only when code first needs them.
 dependencies = [
