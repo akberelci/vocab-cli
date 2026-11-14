@@ -14,7 +14,7 @@ from collections.abc import Collection, Iterator
 from spacy.tokens import Doc, Token
 
 from vocab.models import Candidate, ItemKind
-from vocab.nlp.pipeline import sentence_text
+from vocab.nlp.examples import excerpt
 
 # Part-of-speech tags that are never vocabulary:
 # proper nouns, punctuation, symbols, "other" (URLs, noise) and whitespace.
@@ -41,7 +41,6 @@ def extract_words(doc: Doc, skip: Collection[int] = ()) -> Iterator[Candidate]:
     to a phrase ("gave" and "up" in "gave up").
     """
     for sentence in doc.sents:
-        text = sentence_text(sentence)
         for token in sentence:
             if token.i not in skip and _is_word(token):
                 yield Candidate(
@@ -49,7 +48,7 @@ def extract_words(doc: Doc, skip: Collection[int] = ()) -> Iterator[Candidate]:
                     lemma=token.lemma_.lower(),
                     pos=token.pos_,
                     surface_form=token.text,
-                    sentence=text,
+                    sentence=excerpt(sentence, [token.i]),
                 )
 
 

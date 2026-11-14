@@ -12,6 +12,7 @@ import typer
 
 from vocab import __version__, config, importer, known
 from vocab.models import Item, ItemKind
+from vocab.nlp.examples import best_example
 from vocab.sources.text_file import SourceError, read_text_file
 from vocab.storage import db, repo
 
@@ -167,9 +168,9 @@ def _print_section(conn: sqlite3.Connection, title: str, items: list[Item], tota
     for item in items:
         zipf = "-" if item.kind is not ItemKind.WORD else _format_zipf(item.zipf)
         typer.echo(f"  {zipf:>4}  {_KIND_LABELS[item.kind]:<12}  {item.lemma}")
-        occurrences = repo.list_occurrences(conn, item.id)
-        if occurrences:
-            typer.echo(f"  {'':>4}  {'':<12}    {occurrences[0].sentence}")
+        example = best_example(repo.list_occurrences(conn, item.id))
+        if example:
+            typer.echo(f"  {'':>4}  {'':<12}    {example.sentence}")
 
     if len(items) < total:
         typer.echo(f"  ... {total - len(items)} more. Use --limit to see more.")

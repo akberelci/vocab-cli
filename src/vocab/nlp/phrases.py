@@ -21,7 +21,7 @@ from importlib import resources
 from spacy.tokens import Doc, Token
 
 from vocab.models import Candidate, ItemKind
-from vocab.nlp.pipeline import sentence_text
+from vocab.nlp.examples import excerpt
 
 
 @dataclass(frozen=True)
@@ -178,7 +178,7 @@ def _phrasal_verb_match(verb: Token, parts: list[Token]) -> PhraseMatch:
         lemma=lemma,
         pos="VERB",
         surface_form=_surface_form(tokens),
-        sentence=sentence_text(verb.sent),
+        sentence=excerpt(verb.sent, [t.i for t in tokens]),
     )
     return PhraseMatch(candidate=candidate, token_indexes=frozenset(t.i for t in tokens))
 
@@ -232,7 +232,7 @@ def _idiom_match(start: Token, words: tuple[str, ...]) -> PhraseMatch:
         lemma=" ".join(words),
         pos=None,  # an idiom as a whole has no single part of speech
         surface_form=span.text,
-        sentence=sentence_text(start.sent),
+        sentence=excerpt(start.sent, [t.i for t in span]),
     )
     return PhraseMatch(candidate=candidate, token_indexes=frozenset(t.i for t in span))
 
