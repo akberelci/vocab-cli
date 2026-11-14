@@ -30,6 +30,13 @@ is 4.0, a rough fit for B2; try 4.5 for B1 or 3.5 for C1. Phrasal verbs and
 idioms are never filtered by this setting. Changing the value takes effect
 immediately, without importing again.
 
+### Spoken text
+
+Text is cleaned before it is analysed: fillers (uh, um, er), caption markers
+(`>>`, `[Music]`) and stumbled repetitions ("in in") are removed. Sentences
+longer than 25 words, common in captions without punctuation, are stored as a
+short excerpt around the word, marked with "...".
+
 ### Where your data lives
 
 | What | Location |

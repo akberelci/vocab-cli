@@ -52,8 +52,26 @@ only a rough stand-in for difficulty: a frequent word can have a rare meaning.
 "good", "data" as "datum") or the wrong part of speech, and misses or invents
 proper names. Name filtering is therefore "where possible", not guaranteed.
 
+One lemma mistake is repaired: nouns that end in "s" without being plurals
+("geopolitics", "mathematics", "species") keep their "s" when the shortened
+form is unknown or far rarer (`lemma_of` in `nlp/words.py`). The repair cannot
+help when the shortened form is itself a common word: "economics" still becomes
+"economic".
+
+- Test: `test_known_limitation_economics_becomes_economic` in
+  `tests/nlp/test_words.py`.
 - Possible fix: try `en_core_web_md` or `en_core_web_trf` and compare on the
-  same texts; the model is loaded in one place, `nlp/pipeline.py`.
+  same texts (the model is loaded in one place, `nlp/pipeline.py`); or check
+  lemmas against a dictionary word list.
+
+### No word families
+
+Related words are separate items: "geopolitics" and "geopolitical", "decide"
+and "decision", "happy" and "unhappiness". Knowing one says nothing about the
+others, so a family can be offered several times.
+
+- Possible fix: group items by a shared stem or a word-family list, and show
+  the family together in `vocab learn`.
 
 ### One item per lemma, whatever the part of speech
 
@@ -64,11 +82,43 @@ one from the first time the word was seen.
 
 spaCy treats "Monday", "March" and "Turkish" as names, so they are not offered.
 
-### Auto-generated captions (not handled yet)
+## Spoken text and auto-generated captions
 
-Text without punctuation gives poor sentence boundaries and worse parses, which
-affects example sentences and phrasal verb detection. This will matter for the
-YouTube source.
+### No punctuation means no real sentences
+
+Auto-generated captions have no punctuation, so spaCy cannot find sentence
+boundaries and the parse is worse than on written text. The current workaround
+is cosmetic: an example longer than 25 words is cut to a window of about 10
+words on each side of the target (`nlp/examples.py`). The cut can fall in the
+middle of a clause, and phrasal verb detection still works on the poor parse.
+
+- Possible fix: a punctuation-restoration model run before parsing. This is a
+  separate model with its own download, so it should be optional.
+
+### Cleaning is deliberately cautious
+
+`nlp/cleaning.py` removes fillers (uh, um, er), caption markers and immediate
+repetitions. It keeps real words that are often used as fillers ("like", "you
+know", "I mean"), and it keeps doubled words that can be normal English ("so
+so", "no no", "that that"), even when the speaker was only stumbling. Add a
+word to `ALLOWED_REPEATS` or `FILLERS` in that file to change this.
+
+### The original text is not kept
+
+Only the cleaned sentence is stored, so an example can differ slightly from
+what was said. The source text itself is never stored in the database.
+
+## Importing
+
+### A source cannot be replaced or removed
+
+A text that was already imported is refused, even after the extraction rules
+have improved. The only way to re-import today is to delete the database file,
+which also discards everything marked as known.
+
+- Possible fix: `vocab add --replace <file>`, which deletes the old source and
+  its example sentences, removes items that are left without any example and
+  were never marked or learned, and imports the text again. Its own task.
 
 ## Phrasal verbs
 
@@ -81,6 +131,20 @@ YouTube source.
 
 Possible fix: use the object of the verb or preposition (a place vs. a person
 or problem) as a hint, or let the user reject single example sentences.
+
+### Listed verbs match literal "verb + preposition" too
+
+"She was taken on a tour of the city" is offered as `take on`. The parser calls
+"on" a preposition there, but it does the same in the real phrasal verb "count
+on him", so the tool cannot reject one without losing the other. Only one case
+is handled: a preposition leading into a date or time ("taken on January the
+3rd") is rejected.
+
+- Test: `test_literal_taken_on_a_tour_is_not_offered` (xfail).
+- Possible fix: mark each entry of `phrasal_verbs.txt` as particle-type ("take
+  on", only accepted when the parser sees a particle) or preposition-type
+  ("count on", accepted with a preposition). This needs a small change to the
+  file format and a review of every entry.
 
 ### Accidental three-part matches
 
