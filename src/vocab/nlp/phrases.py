@@ -111,10 +111,21 @@ def _phrasal_verb_parts(verb: Token) -> list[Token] | None:
         if found is not None:
             options.append(found)
 
-    # Longest match wins: "put up with" (2 parts) beats "put up" (1 part).
-    # max() keeps the first of equally long options, so the parser's particle
-    # is preferred when both rules find a two-word verb.
-    return max(options, key=len, default=None)
+    return choose_match(verb, options)
+
+
+def choose_match(verb: Token, options: list[list[Token]]) -> list[Token] | None:
+    """Pick one of several possible completions of a verb.
+
+    Longest match wins: "put up with" (2 parts) beats "put up" (1 part).
+    Between equally long ones, the one that starts closer to the verb wins:
+    in "look back on", "look back" beats "look on".
+    """
+
+    def rank(parts: list[Token]) -> tuple[int, int]:
+        return (len(parts), -(parts[0].i - verb.i))
+
+    return max(options, key=rank, default=None)
 
 
 def _particle_of(verb: Token) -> Token | None:
@@ -142,7 +153,7 @@ def _match_listed_parts(verb: Token, listed_parts: tuple[str, ...]) -> list[Toke
     found = [first]
     for word in later_words:
         following = _next_in_sentence(found[-1])
-        if following is None or following.lower_ != word:
+        if following is None or following.lower_ != word or _is_infinitive_to(following):
             return None
         found.append(following)
     return found
@@ -151,7 +162,12 @@ def _match_listed_parts(verb: Token, listed_parts: tuple[str, ...]) -> list[Toke
 def _find_first_part(verb: Token, word: str) -> Token | None:
     # Usual case: the word comes directly after the verb ("looks after", "ran into").
     following = _next_in_sentence(verb)
-    if following is not None and following.lower_ == word:
+    if (
+        following is not None
+        and following.lower_ == word
+        and not _is_infinitive_to(following)
+        and not _introduces_a_date(following)
+    ):
         return following
 
     # Separated case: the object stands in between ("threw it away",
@@ -161,6 +177,32 @@ def _find_first_part(verb: Token, word: str) -> Token | None:
         if child.i > verb.i and child.dep_ in ("prt", "advmod") and child.lower_ == word:
             return child
     return None
+
+
+def _is_infinitive_to(token: Token) -> bool:
+    """Is this the "to" of an infinitive ("hold on to see"), not a preposition
+    ("hold on to power")? spaCy tags the two differently."""
+    return token.lower_ == "to" and token.pos_ == "PART"
+
+
+_DATE_ENTITY_TYPES = {"DATE", "TIME"}
+
+
+def _introduces_a_date(token: Token) -> bool:
+    """Is this word a preposition leading into a date or time?
+
+    "The photo was taken on January the 3rd" is not the phrasal verb "take on".
+    A true particle is never rejected: in "they carried on in March", the
+    parser marks "on" as a particle, and the date belongs to "in".
+    """
+    if token.dep_ == "prt":
+        return False
+    following = _next_in_sentence(token)
+    if following is not None and following.ent_type_ in _DATE_ENTITY_TYPES:
+        return True
+    return any(
+        child.dep_ == "pobj" and child.ent_type_ in _DATE_ENTITY_TYPES for child in token.children
+    )
 
 
 def _next_in_sentence(token: Token) -> Token | None:

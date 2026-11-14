@@ -8,7 +8,7 @@ should ideally do, and currently does not.
 import pytest
 
 from vocab.models import ItemKind
-from vocab.nlp import phrases, pipeline
+from vocab.nlp import cleaning, phrases, pipeline
 
 
 def phrasal_verbs(text):
@@ -189,6 +189,86 @@ def test_literal_run_into_a_room_is_not_offered():
 )
 def test_put_a_tent_up_with_someone_is_put_up():
     assert phrasal_verbs("She put the tent up with her brother.") == [("put up", "put ... up")]
+
+
+# --- problems found in spoken text ------------------------------------------------
+
+
+def test_preposition_before_a_date_is_not_a_phrasal_verb():
+    # "take on" is in the list (take on a challenge), but here "on" introduces a date.
+    assert phrasal_verbs("The photo was taken on January the 3rd.") == []
+    assert phrasal_verbs("The photo was taken on Monday.") == []
+
+
+def test_listed_verb_is_still_found_when_no_date_follows():
+    assert phrasal_verbs("The company took on ten new workers.") == [("take on", "took on")]
+
+
+def test_true_particle_before_a_date_phrase_is_kept():
+    assert phrasal_verbs("They carried on in March and gave up on Friday.") == [
+        ("carry on", "carried on"),
+        ("give up", "gave up"),
+    ]
+
+
+def test_three_part_verb_look_back_on():
+    assert phrasal_verbs("When we look back on that period, we see many mistakes.") == [
+        ("look back on", "look back on")
+    ]
+
+
+def test_look_back_without_on_is_still_look_back():
+    assert phrasal_verbs("Looking back, it was the right decision.") == [
+        ("look back", "Looking back")
+    ]
+
+
+def test_three_part_verb_hold_on_to():
+    assert phrasal_verbs("He is trying to hold on to power for as long as he can.") == [
+        ("hold on to", "hold on to")
+    ]
+    assert phrasal_verbs("She held on to the rope.") == [("hold on to", "held on to")]
+
+
+def test_to_of_an_infinitive_is_not_part_of_the_phrasal_verb():
+    # "to see" is an infinitive here, so the verb is "hold on", not "hold on to".
+    assert phrasal_verbs("Hold on to see what happens next.") == [("hold on", "Hold on")]
+
+
+def test_repeated_preposition_from_speech_gives_a_false_particle_without_cleaning():
+    # This is why text is cleaned before parsing (see nlp/cleaning.py).
+    raw = "so what is happening in in um in Brazil right now is uh very serious"
+
+    assert phrasal_verbs(raw) == [("happen in", "happening in")]
+    assert phrasal_verbs(cleaning.clean(raw)) == []
+
+
+def test_between_equally_long_matches_the_one_closer_to_the_verb_wins():
+    doc = pipeline.parse("We look back on that period.")
+    look, back, on = doc[1], doc[2], doc[3]
+
+    # As if the parser had marked "on" as a particle while the list found "back".
+    assert phrases.choose_match(look, [[on], [back]]) == [back]
+    assert phrases.choose_match(look, [[back], [on]]) == [back]
+
+
+def test_longer_match_wins_even_when_it_starts_further_away():
+    doc = pipeline.parse("We look back on that period.")
+    look, back, on = doc[1], doc[2], doc[3]
+
+    assert phrases.choose_match(look, [[back], [back, on]]) == [back, on]
+    assert phrases.choose_match(look, []) is None
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Known limitation: 'take on' is in the list and 'on' follows the verb. The parser "
+    "calls 'on' a preposition here, but it does the same in the real phrasal verb 'count on "
+    "him', so the two cannot be told apart without marking each list entry as "
+    "particle-type or preposition-type.",
+)
+def test_literal_taken_on_a_tour_is_not_offered():
+    assert phrasal_verbs("She was taken on a tour of the city.") == []
 
 
 # --- what a match contains -------------------------------------------------------
