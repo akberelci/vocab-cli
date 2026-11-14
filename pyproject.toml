@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 # Dependencies are added milestone by milestone, only when code first needs them.
 dependencies = [
     "en-core-web-sm",
-    "spacy>=3.8.18",
+    "spacy>=3.8.18,<3.9",  # must match the en-core-web-sm version below
     "typer>=0.12",
 ]
 
