@@ -9,7 +9,7 @@ returned; removing what you already know is the job of the difficulty module.
 """
 
 import re
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 
 from spacy.tokens import Doc, Token
 
@@ -34,12 +34,16 @@ _NAME_ENTITY_TYPES = {"PERSON", "GPE", "LOC", "ORG", "FAC", "NORP"}
 _WORD_PATTERN = re.compile(r"[^\W\d_]+('[^\W\d_]+)*")
 
 
-def extract_words(doc: Doc) -> Iterator[Candidate]:
-    """Yield one candidate for every token in the text that counts as a word."""
+def extract_words(doc: Doc, skip: Collection[int] = ()) -> Iterator[Candidate]:
+    """Yield one candidate for every token in the text that counts as a word.
+
+    `skip` holds positions of tokens to leave out, because they already belong
+    to a phrase ("gave" and "up" in "gave up").
+    """
     for sentence in doc.sents:
         text = sentence_text(sentence)
         for token in sentence:
-            if _is_word(token):
+            if token.i not in skip and _is_word(token):
                 yield Candidate(
                     kind=ItemKind.WORD,
                     lemma=token.lemma_.lower(),

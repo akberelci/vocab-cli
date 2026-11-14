@@ -7,7 +7,7 @@ the `vocab add` command will call. It does not print anything itself.
 import sqlite3
 from dataclasses import dataclass
 
-from vocab.nlp import pipeline, words
+from vocab.nlp import extract, pipeline
 from vocab.sources.base import SourceText
 from vocab.storage import repo
 
@@ -19,17 +19,17 @@ class AlreadyImportedError(Exception):
 @dataclass(frozen=True)
 class ImportResult:
     source_id: int
-    candidates: int  # how many words were found in the text, counting repeats
+    candidates: int  # how many words and phrases were found, counting repeats
     new_items: int  # how many of them were not in the database before
 
 
 def import_source(conn: sqlite3.Connection, source: SourceText) -> ImportResult:
-    """Extract the words of a source and save them with their example sentences."""
+    """Extract the words and phrases of a source and save them with their example sentences."""
     if repo.find_source_by_hash(conn, source.content_hash) is not None:
         raise AlreadyImportedError(f"This text was already imported: {source.ref}")
 
     # The slow part (running spaCy) happens before the database is touched.
-    candidates = list(words.extract_words(pipeline.parse(source.text)))
+    candidates = extract.extract_candidates(pipeline.parse(source.text))
 
     # One transaction: if anything fails, nothing of this import is saved.
     with conn:

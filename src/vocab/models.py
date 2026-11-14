@@ -49,7 +49,7 @@ class Candidate:
 
     kind: ItemKind
     lemma: str  # base form, lower case: "child" for "children"
-    pos: str  # spaCy part-of-speech tag: NOUN, VERB, ADJ, ...
+    pos: str | None  # spaCy part-of-speech tag: NOUN, VERB, ADJ, ... (None for idioms)
     surface_form: str  # the text as it was written: "children"
     sentence: str  # the sentence it was found in
 

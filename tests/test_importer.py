@@ -52,6 +52,19 @@ def test_proper_names_and_numbers_are_not_saved(conn):
     assert set(items_by_lemma(conn)) == {"move", "to", "in"}
 
 
+def test_phrasal_verbs_are_saved_as_their_own_kind_of_item(conn):
+    importer.import_source(conn, make_source("She turned her phone off and gave up."))
+
+    items = items_by_lemma(conn)
+
+    assert items["turn off"].kind is ItemKind.PHRASAL_VERB
+    assert items["give up"].kind is ItemKind.PHRASAL_VERB
+    assert not {"turn", "off", "give", "up"} & set(items)
+    assert repo.list_occurrences(conn, items["turn off"].id) == [
+        Occurrence(sentence="She turned her phone off and gave up.", surface_form="turned ... off")
+    ]
+
+
 def test_result_reports_how_much_was_found(conn):
     result = importer.import_source(conn, make_source("The dog saw the cat."))
 
