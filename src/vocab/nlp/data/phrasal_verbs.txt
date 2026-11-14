@@ -1,0 +1,174 @@
+# Phrasal verbs that vocab should recognise.
+#
+# Format: one phrasal verb per line, in lower case, verb in its base form:
+#     give up
+#     look forward to
+# Lines starting with "#" and empty lines are ignored.
+#
+# You do not need to list everything. Verbs with a true particle ("give up",
+# "turn the light off") are found from the grammar of the sentence even when
+# they are not here. The list matters most for:
+#   - verbs followed by a preposition:  look after, run into, come across
+#   - verbs followed by an adverb:      run away, look back, throw away
+#   - three-part verbs:                 put up with, look forward to
+#
+# Be careful with combinations that are usually literal. If you add "run up",
+# then "He ran up the hill" will be reported as a phrasal verb, because the
+# list is matched on the words, not on the meaning.
+
+back up
+blow up
+break down
+break in
+break into
+break out
+break up
+bring about
+bring back
+bring up
+call back
+call off
+call up
+calm down
+care for
+carry on
+carry out
+catch up
+catch up with
+check in
+check out
+cheer up
+clean up
+come across
+come along
+come back
+come up with
+count on
+cut down on
+cut off
+deal with
+do without
+dress up
+drop off
+drop out
+eat out
+end up
+fall apart
+fall behind
+fall for
+figure out
+fill in
+fill out
+find out
+get along
+get along with
+get away
+get away with
+get by
+get over
+get through
+get together
+get up
+give away
+give back
+give in
+give up
+go ahead
+go on
+grow up
+hand in
+hand out
+hang on
+hang out
+hang up
+hold on
+hold on to
+hold up
+hurry up
+keep on
+keep up
+keep up with
+knock out
+lay off
+lay out
+leave out
+let down
+log in
+look after
+look back
+look back on
+look down on
+look for
+look forward to
+look into
+look out
+look up
+look up to
+make up
+make up for
+mix up
+move on
+pass away
+pass out
+pay back
+pay off
+pick out
+pick up
+point out
+put away
+put off
+put on
+put out
+put up with
+rely on
+rule out
+run away
+run into
+run out
+run out of
+set off
+set up
+settle down
+show off
+show up
+shut down
+shut up
+sit down
+slow down
+sort out
+speak up
+stand by
+stand for
+stand out
+stand up for
+stay up
+stick to
+take after
+take apart
+take away
+take back
+take off
+take on
+take over
+take up
+tell apart
+think over
+throw away
+throw up
+try on
+try out
+turn down
+turn into
+turn off
+turn on
+turn out
+turn up
+use up
+wake up
+warm up
+wear out
+wind up
+wipe out
+work out
+write down
+zoom in

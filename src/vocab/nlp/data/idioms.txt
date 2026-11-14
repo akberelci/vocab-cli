@@ -1,0 +1,116 @@
+# Idioms and fixed expressions that vocab should recognise.
+#
+# Format: one expression per line, in lower case:
+#     kick the bucket
+#     once in a blue moon
+# Lines starting with "#" and empty lines are ignored.
+#
+# Write verbs in their base form ("kick the bucket", not "kicked the bucket").
+# Other verb forms in a text are then found too: "kicked the bucket",
+# "kicking the bucket". All other words must appear exactly as written here.
+#
+# Limits:
+#   - The words must stand next to each other in the text, in this order.
+#   - Expressions with a changing part ("pull someone's leg", "keep an eye on
+#     him") cannot be written here yet. List only the fixed part if there is
+#     one ("keep an eye on").
+#   - The list is matched on the words, not on the meaning. A short entry that
+#     is often literal ("for good" in "for good reasons") will give false hits.
+
+a blessing in disguise
+a piece of cake
+add fuel to the fire
+all of a sudden
+as a matter of fact
+at first
+at last
+at least
+at once
+at the drop of a hat
+at the end of the day
+back to square one
+bark up the wrong tree
+beat around the bush
+behind the scenes
+better late than never
+bite the bullet
+break a leg
+break the ice
+burn the midnight oil
+by and large
+by heart
+by the way
+call it a day
+cost an arm and a leg
+cut corners
+cut to the chase
+down to earth
+easier said than done
+every now and then
+face the music
+for instance
+for the time being
+from scratch
+get cold feet
+get out of hand
+get the hang of
+give it a shot
+go the extra mile
+hang in there
+hit the nail on the head
+hit the road
+hit the sack
+in a nutshell
+in advance
+in charge of
+in fact
+in spite of
+in the long run
+in the nick of time
+in the same boat
+in vain
+jump the gun
+keep an eye on
+keep in touch
+kick the bucket
+kill two birds with one stone
+let the cat out of the bag
+lose track of
+make ends meet
+make sense
+miss the boat
+of course
+on behalf of
+on cloud nine
+on purpose
+on the fence
+on the other hand
+on the same page
+once and for all
+once in a blue moon
+out of the blue
+out of the question
+over the moon
+pay attention
+play it by ear
+rain cats and dogs
+read between the lines
+ring a bell
+rule of thumb
+see eye to eye
+sit on the fence
+sleep on it
+sooner or later
+speak of the devil
+spill the beans
+take it easy
+take part
+take place
+the last straw
+the tip of the iceberg
+through thick and thin
+to make a long story short
+under the weather
+up in the air
+up to date
+word of mouth
