@@ -87,6 +87,22 @@ def test_idioms_are_saved_as_their_own_kind_of_item(conn):
     assert {"call", "day"} <= set(items_by_lemma(conn))  # the single words are kept too
 
 
+def test_spoken_text_is_cleaned_before_it_is_parsed(conn):
+    import_text(conn, ">> so what is happening in in um in Brazil right now is uh very serious")
+
+    items = items_by_lemma(conn)
+
+    # Without cleaning, the repeated "in" is mistaken for a particle ("happen in").
+    assert "happen in" not in items
+    assert not {"um", "uh"} & set(items)
+    assert repo.list_occurrences(conn, items["happen"].id) == [
+        Occurrence(
+            sentence="so what is happening in Brazil right now is very serious",
+            surface_form="happening",
+        )
+    ]
+
+
 # --- difficulty --------------------------------------------------------------------
 
 

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from vocab import difficulty
 from vocab.models import Candidate, Item, ItemKind, ItemStatus
-from vocab.nlp import extract, pipeline
+from vocab.nlp import cleaning, extract, pipeline
 from vocab.sources.base import SourceText
 from vocab.storage import repo
 
@@ -59,7 +59,9 @@ def import_source(conn: sqlite3.Connection, source: SourceText, known_zipf: floa
         raise AlreadyImportedError(f"This text was already imported: {source.ref}")
 
     # The slow part (running spaCy) happens before the database is touched.
-    candidates = extract.extract_candidates(pipeline.parse(source.text))
+    # Fillers, repetitions and caption markers are removed first; they are not
+    # vocabulary and they mislead the parser.
+    candidates = extract.extract_candidates(pipeline.parse(cleaning.clean(source.text)))
     groups = _group_by_item(candidates)
 
     counts: dict[str, int] = {}
