@@ -102,6 +102,22 @@ def test_possessive_s_is_dropped():
     assert lemmas("My sister's car is old.") == ["my", "sister", "car", "be", "old"]
 
 
+def test_curly_apostrophes_are_read_like_plain_ones():
+    # Books and web pages use the typographic apostrophe: don’t, it’s.
+    assert lemmas("She didn’t know it’s late.") == ["she", "do", "not", "know", "it", "be", "late"]
+
+
+def test_apostrophe_inside_a_word_is_kept():
+    found = extract("She set an alarm for six o'clock.")
+
+    assert [c.lemma for c in found][-2:] == ["six", "o'clock"]
+    assert found[-1].surface_form == "o'clock"
+
+
+def test_curly_apostrophe_inside_a_word_is_kept():
+    assert "o'clock" in lemmas("We met at six o’clock.")
+
+
 # --- things that are not vocabulary ------------------------------------------
 
 
@@ -129,14 +145,38 @@ def test_digits_money_and_ordinals_are_skipped():
     ]
 
 
-def test_number_words_are_skipped():
-    assert lemmas("There were twenty-three authors and two editors.") == [
+def test_ordinals_written_with_digits_are_skipped():
+    assert lemmas("On the 14th day she finished a 10 kilometre race.") == [
+        "on",
+        "the",
+        "day",
+        "she",
+        "finish",
+        "a",
+        "kilometre",
+        "race",
+    ]
+
+
+def test_written_out_number_words_are_kept():
+    assert lemmas("There were twenty-three authors and six editors.") == [
         "there",
         "be",
+        "twenty",
+        "three",
         "author",
         "and",
+        "six",
         "editor",
     ]
+
+
+def test_written_out_ordinals_are_kept():
+    # "at first" would lose its main word if "first" were treated as a number.
+    found = lemmas("At first, she nearly gave up after the third week.")
+
+    assert "first" in found
+    assert "third" in found
 
 
 def test_urls_and_email_addresses_are_skipped():
