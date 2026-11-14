@@ -50,6 +50,8 @@ def find_source_by_hash(conn: sqlite3.Connection, content_hash: str) -> int | No
 
 # --- items -------------------------------------------------------------------
 
+_ITEM_COLUMNS = "id, kind, lemma, pos, zipf, status"
+
 
 def upsert_item(
     conn: sqlite3.Connection,
@@ -74,6 +76,21 @@ def upsert_item(
     return row["id"]
 
 
+def find_item(conn: sqlite3.Connection, kind: ItemKind, lemma: str) -> Item | None:
+    row = conn.execute(
+        f"SELECT {_ITEM_COLUMNS} FROM items WHERE kind = ? AND lemma = ?", (kind, lemma)
+    ).fetchone()
+    return _row_to_item(row) if row else None
+
+
+def find_items_by_lemma(conn: sqlite3.Connection, lemma: str) -> list[Item]:
+    """All items with this lemma, whatever their kind (usually one, rarely two)."""
+    rows = conn.execute(
+        f"SELECT {_ITEM_COLUMNS} FROM items WHERE lemma = ? ORDER BY kind", (lemma,)
+    ).fetchall()
+    return [_row_to_item(row) for row in rows]
+
+
 def set_item_status(conn: sqlite3.Connection, item_id: int, status: ItemStatus) -> None:
     conn.execute("UPDATE items SET status = ? WHERE id = ?", (status, item_id))
 
@@ -81,10 +98,55 @@ def set_item_status(conn: sqlite3.Connection, item_id: int, status: ItemStatus) 
 def list_items(conn: sqlite3.Connection, status: ItemStatus) -> list[Item]:
     """Return all items with the given status, in alphabetical order."""
     rows = conn.execute(
-        "SELECT id, kind, lemma, pos, zipf, status FROM items WHERE status = ? ORDER BY lemma",
-        (status,),
+        f"SELECT {_ITEM_COLUMNS} FROM items WHERE status = ? ORDER BY lemma", (status,)
     ).fetchall()
     return [_row_to_item(row) for row in rows]
+
+
+# Candidates are the items offered for learning: status "new", and for single
+# words also rare enough. "Too easy" is not stored anywhere. It is worked out
+# here from the threshold, so changing the threshold takes effect at once.
+# Words without a score (zipf IS NULL) are candidates, because we cannot tell.
+_WORD_CANDIDATE = "kind = 'word' AND status = 'new' AND (zipf IS NULL OR zipf < ?)"
+_PHRASE_CANDIDATE = "kind != 'word' AND status = 'new'"
+
+
+def list_word_candidates(
+    conn: sqlite3.Connection, known_zipf: float, limit: int | None = None
+) -> list[Item]:
+    """Words worth learning, rarest first; words without a score come last."""
+    rows = conn.execute(
+        f"SELECT {_ITEM_COLUMNS} FROM items WHERE {_WORD_CANDIDATE} "
+        "ORDER BY zipf IS NULL, zipf, lemma LIMIT ?",
+        (known_zipf, _sql_limit(limit)),
+    ).fetchall()
+    return [_row_to_item(row) for row in rows]
+
+
+def count_word_candidates(conn: sqlite3.Connection, known_zipf: float) -> int:
+    return conn.execute(
+        f"SELECT COUNT(*) FROM items WHERE {_WORD_CANDIDATE}", (known_zipf,)
+    ).fetchone()[0]
+
+
+def list_phrase_candidates(conn: sqlite3.Connection, limit: int | None = None) -> list[Item]:
+    """Phrasal verbs and idioms worth learning, in alphabetical order.
+
+    Phrases are never filtered by frequency.
+    """
+    rows = conn.execute(
+        f"SELECT {_ITEM_COLUMNS} FROM items WHERE {_PHRASE_CANDIDATE} ORDER BY lemma LIMIT ?",
+        (_sql_limit(limit),),
+    ).fetchall()
+    return [_row_to_item(row) for row in rows]
+
+
+def count_phrase_candidates(conn: sqlite3.Connection) -> int:
+    return conn.execute(f"SELECT COUNT(*) FROM items WHERE {_PHRASE_CANDIDATE}").fetchone()[0]
+
+
+def _sql_limit(limit: int | None) -> int:
+    return -1 if limit is None else limit  # in SQLite, LIMIT -1 means "no limit"
 
 
 def count_items(conn: sqlite3.Connection) -> int:

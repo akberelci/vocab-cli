@@ -134,3 +134,84 @@ def test_changes_are_rolled_back_when_an_import_fails(conn, source_id):
         repo.add_source(conn, SourceKind.FILE, "story.txt", None, "hash-1")  # duplicate
 
     assert repo.list_items(conn, ItemStatus.NEW) == []
+
+
+# --- finding items -------------------------------------------------------------
+
+
+def test_find_item_returns_the_item_or_none(conn):
+    repo.upsert_item(conn, ItemKind.WORD, "reluctant", pos="ADJ", zipf=3.81)
+
+    found = repo.find_item(conn, ItemKind.WORD, "reluctant")
+
+    assert (found.lemma, found.pos, found.zipf) == ("reluctant", "ADJ", 3.81)
+    assert repo.find_item(conn, ItemKind.IDIOM, "reluctant") is None
+    assert repo.find_item(conn, ItemKind.WORD, "missing") is None
+
+
+def test_find_items_by_lemma_returns_every_kind(conn):
+    repo.upsert_item(conn, ItemKind.PHRASAL_VERB, "give up")
+    repo.upsert_item(conn, ItemKind.IDIOM, "give up")
+    repo.upsert_item(conn, ItemKind.WORD, "give")
+
+    assert {item.kind for item in repo.find_items_by_lemma(conn, "give up")} == {
+        ItemKind.PHRASAL_VERB,
+        ItemKind.IDIOM,
+    }
+    assert repo.find_items_by_lemma(conn, "missing") == []
+
+
+# --- candidates ----------------------------------------------------------------
+
+
+@pytest.fixture
+def mixed_items(conn):
+    repo.upsert_item(conn, ItemKind.WORD, "the", zipf=7.73)
+    repo.upsert_item(conn, ItemKind.WORD, "athlete", zipf=4.11)
+    repo.upsert_item(conn, ItemKind.WORD, "reluctant", zipf=3.81)
+    repo.upsert_item(conn, ItemKind.WORD, "obfuscate", zipf=2.28)
+    repo.upsert_item(conn, ItemKind.WORD, "zxqvorble", zipf=None)
+    repo.upsert_item(conn, ItemKind.PHRASAL_VERB, "give up")
+    repo.upsert_item(conn, ItemKind.IDIOM, "at first")
+
+
+def test_word_candidates_are_below_the_threshold_rarest_first(conn, mixed_items):
+    lemmas = [item.lemma for item in repo.list_word_candidates(conn, known_zipf=4.0)]
+
+    # Words without a score come last: we cannot rank them.
+    assert lemmas == ["obfuscate", "reluctant", "zxqvorble"]
+
+
+def test_word_exactly_at_the_threshold_is_not_a_candidate(conn, mixed_items):
+    lemmas = [item.lemma for item in repo.list_word_candidates(conn, known_zipf=4.11)]
+
+    assert "athlete" not in lemmas
+
+
+def test_changing_the_threshold_changes_the_candidates_without_a_new_import(conn, mixed_items):
+    assert repo.count_word_candidates(conn, known_zipf=4.0) == 3
+    assert repo.count_word_candidates(conn, known_zipf=4.5) == 4  # + athlete
+    assert repo.count_word_candidates(conn, known_zipf=3.5) == 2  # - reluctant
+
+
+def test_word_candidates_can_be_limited(conn, mixed_items):
+    lemmas = [item.lemma for item in repo.list_word_candidates(conn, known_zipf=4.0, limit=2)]
+
+    assert lemmas == ["obfuscate", "reluctant"]
+
+
+def test_phrase_candidates_ignore_the_threshold(conn, mixed_items):
+    lemmas = [item.lemma for item in repo.list_phrase_candidates(conn)]
+
+    assert lemmas == ["at first", "give up"]
+    assert repo.count_phrase_candidates(conn) == 2
+    assert len(repo.list_phrase_candidates(conn, limit=1)) == 1
+
+
+@pytest.mark.parametrize("status", [ItemStatus.KNOWN, ItemStatus.IGNORED, ItemStatus.LEARNING])
+def test_items_that_are_not_new_are_not_candidates(conn, mixed_items, status):
+    for kind, lemma in [(ItemKind.WORD, "reluctant"), (ItemKind.PHRASAL_VERB, "give up")]:
+        repo.set_item_status(conn, repo.find_item(conn, kind, lemma).id, status)
+
+    assert "reluctant" not in [i.lemma for i in repo.list_word_candidates(conn, known_zipf=4.0)]
+    assert [i.lemma for i in repo.list_phrase_candidates(conn)] == ["at first"]
