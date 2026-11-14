@@ -7,8 +7,40 @@ multi-word expressions such as phrasal verbs, estimates their difficulty,
 filters out what you already know, and schedules reviews with spaced
 repetition. All data stays on your machine.
 
-**Status:** early development. Storage, the text file source and word
-extraction exist; the CLI commands do not yet.
+**Status:** early development. Importing text files, difficulty filtering and
+listing candidates work. Learning, review and YouTube import do not exist yet.
+
+## Usage
+
+```sh
+uv run vocab add story.txt      # import a text file
+uv run vocab list               # candidates: rare words first, then phrases
+uv run vocab list --limit 50    # show more rows per section
+uv run vocab known reluctant "give up"    # mark items as known (base form)
+uv run vocab known --undo reluctant
+uv run vocab config             # show settings and file locations
+uv run vocab config known-zipf 3.8        # change the difficulty threshold
+```
+
+### Difficulty threshold
+
+Words are scored by how common they are (Zipf scale: higher = more common).
+Words at or above `known_zipf` count as known and are not offered. The default
+is 4.0, a rough fit for B2; try 4.5 for B1 or 3.5 for C1. Phrasal verbs and
+idioms are never filtered by this setting. Changing the value takes effect
+immediately, without importing again.
+
+### Where your data lives
+
+| What | Location |
+|---|---|
+| Settings | `~/.config/vocab/config.toml` |
+| Database | `~/.local/share/vocab/vocab.db` |
+
+Both are created on the first run. Nothing is stored in this repository.
+Set `VOCAB_CONFIG_DIR` / `VOCAB_DATA_DIR` to use other folders.
+
+See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for what the tool gets wrong.
 
 ## Setup
 
