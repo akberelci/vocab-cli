@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 # Dependencies are added milestone by milestone, only when code first needs them.
 dependencies = [
+    "en-core-web-sm",
+    "spacy>=3.8.18",
     "typer>=0.12",
 ]
 
@@ -37,3 +39,6 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 # E/F: basic errors, I: import order, UP: modern Python syntax, B: likely bugs.
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.uv.sources]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
