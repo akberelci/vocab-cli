@@ -36,8 +36,8 @@ it came from.
 Requires Python 3.12 or newer and [uv](https://docs.astral.sh/uv/).
 
 ```sh
-git clone <repo-url> vocab
-cd vocab
+git clone https://github.com/akberelci/vocab-cli.git
+cd vocab-cli
 uv sync         # creates .venv and installs everything, including the language model
 uv run pytest   # optional: check that the setup works
 ```
